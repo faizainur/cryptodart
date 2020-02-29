@@ -48,7 +48,7 @@ Future<String> readPemFile(String path) async {
 
 Future<String> processRsaEncrpytPemPath(String plainText, String path) async {
   final encrypter = RsaCrypt();
-  final pubkey = RsaCrypt().parseKeyFromString(await readPemFile(path));
+  final pubkey =  encrypter.parseKeyFromString(await readPemFile(path));
   final chiperText = encrypter.encrypt(plainText, pubkey);
   
   return chiperText;
@@ -56,29 +56,30 @@ Future<String> processRsaEncrpytPemPath(String plainText, String path) async {
 
 String processRsaEncrpytPemString(String plainText, String key) {
   final encrypter = RsaCrypt();
-  final pubkey = RsaCrypt().parseKeyFromString(key);
+  final pubkey = encrypter.parseKeyFromString(key);
   final chiperText = encrypter.encrypt(plainText, pubkey);
   
   return chiperText;
 }
 
 Future<String> processRsaDecrpytPemPath(String chiperText, String path) async {
-  final privkey = RsaCrypt().parseKeyFromString(await readPemFile(path));
   final decrypter = RsaCrypt();
+  final privkey = decrypter.parseKeyFromString(await readPemFile(path));
   final plainText = decrypter.decrypt(chiperText, privkey);
   return plainText;
 }
 
 String processRsaDecrpytPemString(String chiperText, String key) {
-  final privkey = RsaCrypt().parseKeyFromString(key);
   final decrypter = RsaCrypt();
+  final privkey = decrypter.parseKeyFromString(key);
   final plainText = decrypter.decrypt(chiperText, privkey);
   return plainText;
 }
 
 void writePemFiles(String path) async {
-  final pubkey = RsaCrypt().encodeKeyToString(RsaCrypt().randPubKey);
-  final privkey = RsaCrypt().encodeKeyToString(RsaCrypt().randPrivKey);
+  final keypairGenerator = RsaCrypt();
+  final pubkey = keypairGenerator.encodeKeyToString(keypairGenerator.randPubKey);
+  final privkey = keypairGenerator.encodeKeyToString(keypairGenerator.randPrivKey);
   final pubPath = p.join(path, 'pubkey.pem');
   final privPath = p.join(path, 'privkey.pem');
 
