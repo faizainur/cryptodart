@@ -46,6 +46,16 @@ void main(List<String> arguments) {
       abbr: 'h',
       negatable: false,
       help: 'Show helper for hashing',
+    )
+    ..addFlag(
+      'hex',
+      abbr: 'x',
+      help: 'Represent the chipertext as Hexadecimal',
+      negatable: false
+    )
+    ..addFlag(
+      'base64',
+      abbr: 'b64'
     );
   ;
 
@@ -75,58 +85,45 @@ void main(List<String> arguments) {
           argsInput.command.arguments.contains('-s'))) {
         stdout.write('Input string : ');
         sinput = stdin.readLineSync();
-        //stdout.write('$sinput');
-
       } else {
         sinput = argsInput.command['sinput'];
       }
 
       processHash(argsInput.command['type'].toString().toUpperCase(), sinput);
     }
-    // if (argsInput.command.arguments.contains('-s')){
-    //   print(argsInput.command['sinput']);
-    // } else {
-    //   print('error');
-    // }
-    // print('Hello');
+  }
+
+  if (argsInput.command.name == 'encrypt') {
+    processRsaEncrpyt('Hello World');
   }
 }
 
 void processHash(String type, String plainText) {
-  if (type == 'MD5') {
-    final bytes = utf8.encode(plainText);
-    Digest digest = md5.convert(bytes);
+  final hasher = HashCrypt(type);
+  final digest = hasher.hash(plainText);
+  final bytes = base64.decode(digest);
+  final digestHex = bytesToHex(bytes);
 
-    print('--------------------------------------------');
-    print('Input string       : $plainText');
-    print('Hashing algorithm  : $type');
-    print('Digest as bytes    : ${digest.bytes}');
-    stdout.write('Digest as Base64   : ');
-    digest.bytes.forEach((value) {
-      stdout.write(value.toRadixString(16));
-    });
-    stdout.write('\n' + base64.encode(digest.bytes));
-    print('\nDigest as hex      : $digest');
-
-    final hasher = HashCrypt('MD5');
-
-    print(500.toRadixString(16));
-  }
-
-  if (type == 'SHA-1') {
-    final bytes = utf8.encode(plainText);
-    final digest = sha1.convert(bytes);
-    
-    print('--------------------------------------------');
-    print('Input string       : $plainText');
-    print('Hashing algorithm  : $type');
-    print('Digest as bytes    : ${digest.bytes}');
-    print('Digest as hex      : $digest');
-
-  
-  }
+  print('--------------------------------------------');
+  print('Input string       : $plainText');
+  print('Hashing algorithm  : $type');
+  print('Hash in bytes      : $bytes');
+  print('Hash in Base64     : $digest');
+  print('Hash in hex        : $digestHex');
 }
 
-void processEncrpyt(String type, String key, String plainText) {
-  
+String bytesToHex(List<int> data) {
+  String hex = '';
+
+  // Convert every integer in data to hex, and add to variable hex
+  data.forEach((value) => hex += value.toRadixString(16));
+
+  return hex;
+}
+
+String processRsaEncrpyt(String plainText) {
+  final encrypter = RsaCrypt();
+  final chiperText = encrypter.encrypt(plainText, RsaCrypt().randPubKey);
+
+  return chiperText;
 }
