@@ -1,16 +1,56 @@
 import 'dart:io';
 import 'package:cryptodart/cryptodart.dart' as cryptodart;
 import 'package:args/args.dart';
-import 'package:steel_crypt/steel_crypt.dart';
 
-// import 'package:encrypt/encrypt.dart';
-// import 'package:pointycastle/asymmetric/api.dart';
+const mainHelper = '''
+Usage     : cryptodart <command> [options] [<flags>]
+
+Example   : cryptodart encrypt --help
+            cryptodart gen-keypair --path 'save/path/to/destined/dir'
+            cryptodart decrypt --sinput 'Hello World' --path 'path/to/dir' --no-base64 -x8
+                       ------- ---------------------- ------------------------------------
+                          |               |                            |
+                      <command>       [options]                    [<flags>]
+  
+commands  :
+  hash           Use this command to hash data using one-way hashing algorithm.
+                    run [crypto hash --help] for further details about this command.
+
+  encrypt        Use this command to encrypt data using asymmetric encryption algorithms like RSA.
+                 [RSA]
+                    run [crypto encrypt --help] for further details about this command.
+
+  decrypt        Use this command to decrypt encrypted data using asymmetric encryption algorithms.
+                    run [crypto decrypt --help] for further details about this command.
+          
+                  NB] Please remember to always use the same keypair for encrytion and decryption.
+      
+  gen-keypair    Generate keypair, public key and private key, and save the key as [.pem] files to destined directory.
+
+  help           Show helper.
+    
+    ''';
 
 void main(List<String> arguments) {
-  initArgs(arguments);
+  if (arguments.isNotEmpty) {
+    initArgs(arguments);
+  } else {
+    stdout.writeln(mainHelper);
+  }
 }
 
+/* This method will initialized the options, commands, and flags. */
 Future<void> initArgs(List<String> arguments) async {
+  /* 
+    This object used to define options and flags for [hash] command.
+
+    Options :
+      - [-t]  [--type]    Specify the type of the hashing algorithm
+      - [-s]  [--sinput]  String input to the algorithm.
+    
+    Flag    :
+      - [-h]  [--help]    Show helper for hashing.
+   */
   final hashOptionParser = ArgParser()
     ..addOption(
       'type',
@@ -30,13 +70,28 @@ Future<void> initArgs(List<String> arguments) async {
       help: 'Show helper for hashing',
     );
 
+  /* 
+    This object used to define options and flags for [encrypt] command.
+
+    Options :
+      - [-s]  [--sinput]  String input to the algorithm.
+    
+    Flags   :
+      - [-p]  [--path]        Specify the path to the key file [.pem].
+      -       [--pem-string]  Use this command to directly passing the key as a string.
+      - [-x]  [--hex]         Show the encrypted data as hexadecimal.
+      - [-b]  [--base64]      Show the encrypred data as base64. (DEFAULT ON)
+              [--no-base64]   Set this flag to not use base64.
+      - [-8]  [--bytes]       Show the encrypted data as bytes.
+      - [-h]  [--help]        Show helper for encryption.
+   */
   final encryptOptionParser = ArgParser()
-    ..addOption(
-      'type',
-      abbr: 't',
-      allowed: ['RSA'],
-      help: 'Specify the type of the encryption algorithm',
-    )
+    // ..addOption(
+    //   'type',
+    //   abbr: 't',
+    //   allowed: ['RSA'],
+    //   help: 'Specify the type of the encryption algorithm ',
+    // )
     ..addOption(
       'sinput',
       abbr: 's',
@@ -70,16 +125,27 @@ Future<void> initArgs(List<String> arguments) async {
       'help',
       abbr: 'h',
       negatable: false,
-      help: 'Show helper for hashing',
+      help: 'Show helper for encryption',
     );
 
+  /* 
+    This object used to define options and flags for [decrypt] command.
+
+    Options :
+      - [-s]  [--sinput]  String input to the algorithm.
+    
+    Flags   :
+      - [-p]  [--path]        Specify the path to the key file [.pem].
+      -       [--pem-string]  Use this command to directly passing the key as a string.
+      - [-h]  [--help]        Show helper for decryption.
+   */
   final decryptOptionParser = ArgParser()
-    ..addOption(
-      'type',
-      abbr: 't',
-      allowed: ['RSA'],
-      help: 'Specify the type of the encryption algorithm',
-    )
+    // ..addOption(
+    //   'type',
+    //   abbr: 't',
+    //   allowed: ['RSA'],
+    //   help: 'Specify the type of the encryption algorithm',
+    // )
     ..addOption(
       'sinput',
       abbr: 's',
@@ -98,16 +164,33 @@ Future<void> initArgs(List<String> arguments) async {
       'help',
       abbr: 'h',
       negatable: false,
-      help: 'Show helper for hashing',
+      help: 'Show helper for decryption',
     );
 
+  /* 
+    This object used to define options and flags for [gen-keypair] command.
+
+    Flags   :
+      - [-p]  [--path]        Specify the path to save directory of the keypair files [.pem].
+   */
   final genKeyPairOption = ArgParser()
     ..addFlag(
       'path',
       abbr: 'p',
       help: 'Specify the path to save',
     );
+    
+  /* 
+    This object used to define commands of the program.
 
+    Commands :
+      - [hash]          Use this command to hash data.
+      - [encrypt]       Use this command to encrypt data.
+      - [decrypt]       Use this command to decrypt data.
+      - [gen-keypair]   Use this command to generate keypair files and save the [.pem] files to destined directory.
+      - [help]          Show main helper.
+    
+   */
   final parser = ArgParser()
     ..addCommand(
       'hash',
@@ -124,57 +207,65 @@ Future<void> initArgs(List<String> arguments) async {
     ..addCommand(
       'gen-keypair',
       genKeyPairOption,
-    );
+    )
+    ..addCommand('help', ArgParser())
+    ..addFlag('help', abbr: 'h');
 
+  // This object used for parsing the arguments.
   final argsInput = parser.parse(arguments);
 
+  // Check if there is [help] command in the argument, will show the main helper.
+  if (argsInput.command.name == 'help') {
+    stdout.writeln(mainHelper);
+  }
+
+  // Check if there is [hash] command in the argument.
   if (argsInput.command.name == 'hash') {
     // sinput == String input
     String sinput;
+
+    // Check if there is [--help] flag
     if (argsInput.command['help']) {
       if (argsInput.command.arguments.length == 1) {
-        stdout.write(hashOptionParser.usage);
+        // Show the helper for [hash] command.
+        stdout.writeln(hashOptionParser.usage);
       } else {
-        stdout.write('Invalid options');
+        stdout.writeln('Invalid options');
       }
     } else {
-      if (!(argsInput.command.arguments.contains('--sinput') ||
-          argsInput.command.arguments.contains('-s'))) {
-        stdout.write('Input string : ');
-        sinput = stdin.readLineSync();
-      } else {
-        sinput = argsInput.command['sinput'];
-      }
+      // Get the input data
+      sinput = argsInput.command['sinput'];
 
+      // Start hashing the data using the selected type hashing algorithm.
       cryptodart.processHash(
           argsInput.command['type'].toString().toUpperCase(), sinput);
     }
   }
 
+  // Check if there is [encrypt] command in the arguments.
   if (argsInput.command.name == 'encrypt') {
     // sinput == String input
     String sinput;
-    String path;
+
+    // Check if there is [--help -h] flag in the arguments
     if (argsInput.command['help']) {
       if (argsInput.command.arguments.length == 1) {
-        stdout.write(encryptOptionParser.usage);
+        // Show the helper for [encrypt] command
+        stdout.writeln(encryptOptionParser.usage);
       } else {
-        stdout.write('Invalid options');
+        stdout.writeln('Invalid options');
       }
     } else {
-      if (!(argsInput.command.arguments.contains('--sinput') ||
-          argsInput.command.arguments.contains('-s'))) {
-        stdout.write('Input string : ');
-        sinput = stdin.readLineSync();
-      } else {
-        sinput = argsInput.command['sinput'];
-      }
+      // Get the input data
+      sinput = argsInput.command['sinput'];
 
       var chiperText;
 
       if ((argsInput.command['path'] && argsInput.command['pem-string']) ||
           (!argsInput.command['path'] && !argsInput.command['pem-string'])) {
-        stdout.write('Invalid options');
+        // If the user set both the [--path -p] and [--pem-string] flags.
+        // Program will showing error message
+        stdout.writeln('Invalid options');
       } else if (argsInput.command['path']) {
         chiperText = await cryptodart.processRsaEncrpytPemPath(
             sinput, argsInput.command.rest[0]);
@@ -190,7 +281,7 @@ Future<void> initArgs(List<String> arguments) async {
 
         if (argsInput.command['bytes']) {
           stdout.writeln('Chipertext in bytes : ');
-          stdout.write(cryptodart.base64toBytes(chiperText));
+          stdout.writeln(cryptodart.base64toBytes(chiperText));
           stdout.writeln('\n');
         }
       } else if (argsInput.command['pem-string']) {
@@ -209,7 +300,7 @@ Future<void> initArgs(List<String> arguments) async {
 
         if (argsInput.command['bytes']) {
           stdout.writeln('Chipertext in bytes : ');
-          stdout.write(cryptodart.base64toBytes(chiperText));
+          stdout.writeln(cryptodart.base64toBytes(chiperText));
           stdout.writeln('\n');
         }
       }
@@ -217,62 +308,35 @@ Future<void> initArgs(List<String> arguments) async {
   }
 
   if (argsInput.command.name == 'decrypt') {
-    // RsaCrypt crypt = RsaCrypt();
-    // final pubkey = crypt.parseKeyFromString(await cryptodart.readPemFile('/home/xenon/Documents/pem/pubkey.pem'));
-    // final privkey = crypt.parseKeyFromString(await cryptodart.readPemFile('/home/xenon/Documents/pem/privkey.pem'));
-    // var chiperText = crypt.encrypt('Hello world', pubkey);
-
-    // // print(await cryptodart.readPemFile('/home/xenon/Documents/pem/privkey.pem'));
-    // print(chiperText + '\n');
-
-    // var plainText = crypt.decrypt(chiperText, privkey);
-    // print(plainText);
-
     String sinput;
     if (argsInput.command['help']) {
       if (argsInput.command.arguments.length == 1) {
-        stdout.write(encryptOptionParser.usage);
+        stdout.writeln(encryptOptionParser.usage);
       } else {
-        stdout.write('Invalid options');
+        stdout.writeln('Invalid options');
       }
     } else {
-      if (!(argsInput.command.arguments.contains('--sinput') ||
-          argsInput.command.arguments.contains('-s'))) {
-        stdout.write('Input string : ');
-        sinput = stdin.readLineSync();
-      } else {
-        sinput = argsInput.command['sinput'];
-      }
+      sinput = argsInput.command['sinput'];
     }
     var plainText;
 
     if ((argsInput.command['path'] && argsInput.command['pem-string']) ||
         (!argsInput.command['path'] && !argsInput.command['pem-string'])) {
-      stdout.write('Invalid options');
+      stdout.writeln('Invalid options');
     } else if (argsInput.command['path']) {
       plainText = await cryptodart.processRsaDecrpytPemPath(
           sinput, argsInput.command.rest[0]);
-
-//       plainText = RsaCrypt().decrypt(
-//           '''fVn0sRgrNskNjfF9SGWCmCVCo+HR6h2fMBar0I6LAbqSNzHXJfE/Mx6769R2MBACfzsy9nz239WFaoDtFfrpILrH8HgHC6e1gq2kE9bmja4RzQhdyCK23eW7ipPky/kJsCRsApVLQyqVGSF558ejhomKJL18ApvCzKf1xfVHJTBa4sLoFIU3AXfl+OFHE4DKtFsMRNF9bgn6s9oK1OcbDdxG6A/m8fjU7CDMnbyWCJsC/8Y0xlQ1x4rQ7ZEfgFSjsBR2IaaLAk5kOr/ZAO8G29o1wdAJW0VXSMocqy6oUz2dYwANEDbEHULApKDw8T2dLPqpLs/6u1+adc6lADzc1g==''',
-//           RsaCrypt().parseKeyFromString('''-----BEGIN PRIVATE KEY-----
-// MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCFDmudLOE8hg/C7gQcq+WAHcmpV9M7qm48HB/yX59S6MXrDQaMiavsc0a93Vse4a5XS7SiKbPnmjHMkoawlGZWCYZWRdPOocHT0XCPIlU7QmLPsOrrv4j3ssOXTk6gA2PTEW6Ey9R/2cQPmTfZKlQXBWeGoK2hfIOK2y+RVxg2XwOKsD2J54R2rbX6119nABRhCEZYV6mEaX9vB/5z4hl7UAOloKxaRWC4OCtRr4fE6K0mqFJfKOfkGUq02apu6m9Abm+YATtn4FiF3Zzaoi/4vwWXghLfVBw5KapttaFvT2AxYXa2svCFk7f9EMihGrq5D/kmBC5RrGQ+y9xEfUhJAgMBAAECggEAFL0tqt7+8HcY59I/k9R7Ph/med21j/w9mGLt29Jpu/uKNdve5HLk+ELziM6C0GpuyS6Epi4H25aeInvIQKew18I+TR4vKGrwEjr352d7j3QGgMbbpwlAqRMVB3VuLeS5X4G9DzfSFGd19tRz7wZ4+umdvE85IQ2OV0tYu7euj3LAEnzzY1wy6iNXgVDiPdAGHwvL2RkaoHFpUMgY7BFmEppDLu4eNvgEwDSLZQPzewItw6asAYu0PbY8743zsXcRijArpWPeUviPKkHShL+5fi5T5CIxHHIjgs+C3sZaVXsyzoqG7k9k9M/UxH2op77HFGCMw+yv4kHGvmdyt0ndHQKBgQDJbBV4/HVCs4zWQzjq8YoBstP2eLL8IxhVVqSqctZowtJSCPiqWR0hSX7YerKxvTyG2kSOVS2qV16Y4eFjqUOqO2DC2nY+NEu6YpN8pVKnobU0CP/ce5VsaxlL4wLg7Xoa7oRBhZ0H8L5X4EKAWuQNx67zMBlwF/sjMJIjBB/R0wKBgQCpHAw5Dd7D0kJKFeOvXDfMLn6e/pHp0GMjrL1nzFvoW0FG0keYBMKbTRwGSfWuYlo0iZQEZAIppAYwD/8jExJILvzwJBSVBrLpzVrluec/Nr0t/u5YaB/TMU5A3LfJW6BiXR6uSp1h8pFR3qSzwGasD9ZubcX1QtkmyXPpprNP8wKBgB30FtVhJcb/kIgkgwhdVxqdj2vt0yAvz+SQ9/fpD/2QS1qrvt8GVZCnr1deF8jazW94cg2AmUPlrkmp/aymdUuRfPg9KKxjdoeHNUuqAjqvj5TnabVOI5B19NMWNU1hw3DR25Uq24lcwdGrpfgUjCmIcnnzwzSqPEylYnYWnOzFAoGBAIjrYqIXLtQRuwZM7soeujahNnf42Z8b0AkkZT5TYd6hdBqpSro0sHQZXKVi4H5Ot4ZuFd/wMSgR28iySvrVCCpVkQnFzLxUbiuKzxvNBwRRh55kGAqQU6Qk+ZzemBd6DkNV7e9kDkUtpqdIwsWe9AI/2HgUfQD1HOigly8If4otAoGAf6++vqchxJJKeFEDaiIPAU6Wm/Qu/E8+ANYHbGSga7pUgPAXnolj6L7y6xw2g2DmeXJ7gRtpFicr1NL3p1YW3yX6iTeV2Eu+eYA5JjyYVVT8N7/e0IqVjj5Uw1naRi9hJ3B3dGuZi5GEFYQnji1a7M+ew8aLZq2we/PRSAJyfxw=
-// -----END PRIVATE KEY-----'''));
-
-      stdout.write(plainText);
+      stdout.writeln('\n' + plainText);
     } else if (argsInput.command['pem-string']) {
       plainText = await cryptodart.processRsaDecrpytPemString(
           sinput, argsInput.command.rest[0]);
-      stdout.write(plainText);
+      stdout.writeln(plainText);
     }
   }
   if (argsInput.command.name == 'gen-keypair') {
     if (argsInput.command['path']) {
       final path = argsInput.command.rest[0];
-
-      cryptodart.writePemFiles(path);
+      await cryptodart.writePemFiles(path);
     }
-    // print(await cryptodart.readPemFile('/home/xenon/Documents/pem/pubkey.pem'));
-
   }
 }
